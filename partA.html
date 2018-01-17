@@ -1,0 +1,199 @@
+<!--
+Using Three.js, create a scene with at least 3 objects and 3 lights.
+— Each object will use a different shader, e.g., a Phong shader, a shader that applies a
+texture, a vertex displacement shader, etc. At least one of the objects must both be
+textured and react to lighting.
+— Each object and light in the scene will move or rotate.
+-->
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>demo - Phong shader</title>
+		<meta charset="utf-8">
+		<style>
+			body {
+			  	margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+<body>
+
+<div id="container"></div>
+
+    <script src="js/three.js"></script>
+    <script id="vertexShader" type="x-shader/x-vertex">
+
+      precision mediump float;
+      precision mediump int;
+
+      uniform mat4 modelViewMatrix;
+            uniform mat4 projectionMatrix;
+
+      attribute vec3 position;
+      
+      uniform vec4 my_color;
+      uniform float time;
+
+      varying vec3 vPosition;
+      varying vec4 vColor;
+
+      void main() 
+      {
+
+        vec3 pos = position;
+
+              //uncomment for basic vertex displacement
+              // pos.x += sin(pos.x * 10.0 + time) * 0.1;
+              // pos.y += cos(pos.y * 10.0 + time) * 0.2;
+              // pos.z += sin(pos.z * 20.0 + time) * 0.3;
+
+        vPosition = pos;
+        vColor = my_color;
+
+        gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );
+      }
+      
+
+		</script>
+
+		<script id="fragmentShader" type="x-shader/x-fragment">
+
+      precision mediump float;
+      precision mediump int;
+
+      uniform float time;
+
+      varying vec3 vPosition;
+      varying vec4 vColor;
+
+      void main() 
+      {
+        vec4 color;
+        color = vec4( vColor );
+        color.r += sin( vPosition.x * 10.0 + time ) * 0.5;
+              color.b += cos( vPosition.x * 5.0 + time  ) * 1.0;
+        gl_FragColor = color;
+      }
+	</script>
+
+
+	<script>
+				
+  var container;
+
+	var camera, scene, renderer;
+
+  var vs = document.getElementById( 'vertexShader' ).textContent;
+  var fs = document.getElementById( 'fragmentShader' ).textContent;
+
+  var mesh_floor;
+	var mesh_cube;
+	var material;
+
+	init();
+	animate();
+
+	function init() {
+
+	  container = document.getElementById( 'container' );
+
+		camera = new THREE.PerspectiveCamera( 60.0, window.innerWidth / window.innerHeight, 0.1, 50 );
+		camera.position.z = 15;
+
+		scene = new THREE.Scene();
+
+
+  	// lights
+  	var ambient = new THREE.Vector3(0.1,0.1,0.1);
+
+  	var light1_pos = new THREE.Vector3(0.0,10.0,0.0); //from above
+  	var light1_diffuse = new THREE.Vector3(0.2,0.1,0.5);
+  	var light1_specular = new THREE.Vector3(1.0,1.0,1.0);
+
+    //geometry
+    var geometry_box = new THREE.BoxGeometry( 1, 1, 1 );
+    var geometry_floor = new THREE.PlaneGeometry(40, 20);
+
+		// materials (ie, linking to the shader program)
+
+    var uniforms =  {
+  		ambient: { type: "v3", value: ambient },
+  		light1_pos: { type: "v3", value: light1_pos },
+  		light1_diffuse: { type: "v3", value: light1_diffuse },
+  		light1_specular:  { type: "v3", value: light1_specular },
+  		// light2_pos: { type: "v3", value: light2_pos },
+  		// light2_diffuse: { type: "v3", value: light2_diffuse },
+  		// light2_specular:  { type: "v3", value: light2_specular },
+		};
+
+    material = new THREE.RawShaderMaterial( {
+  		uniforms: uniforms,
+  		vertexShader: vs,
+  		fragmentShader: fs,	
+		} );
+        
+	  mesh_cube = new THREE.Mesh( geometry_box, material );
+		mesh_cube.translateY(2.5);
+    scene.add( mesh_cube );
+
+    mesh_floor = new THREE.Mesh( geometry_floor, material);
+    mesh_floor.rotation.x = 5.2;
+    scene.add(mesh_floor);
+
+  
+		renderer = new THREE.WebGLRenderer();
+		renderer.setClearColor( 0x999999 );
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		container.appendChild( renderer.domElement );
+
+
+		//make it so that resizing the browser window also resizes the scene
+        	window.addEventListener( 'resize', onWindowResize, false );
+	}
+
+			
+
+	function animate() {
+
+		requestAnimationFrame( animate );
+		render();
+
+	}
+
+	function render() {
+
+		var time = performance.now();
+
+		mesh_cube.rotation.x = time * 0.0005;
+		mesh_cube.rotation.y = time * 0.0005;
+
+		// mesh3.rotation.x = time * 0.0009;
+
+  //   mesh1.position.z = Math.sin(time*0.01);
+  //   mesh2.position.z = Math.sin((time+100)*0.01);
+  //   mesh3.position.z = Math.sin(time*0.005);
+
+
+		//if I want to update the lights, I acutally have to update the material used by each object in the scene. 
+		//material.uniforms.light1_diffuse.value = new THREE.Vector3(0.0,1.0,0.0);
+
+		renderer.render( scene, camera );
+	}
+
+
+	function onWindowResize( event ) {
+
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+
+		renderer.setSize( window.innerWidth, window.innerHeight );
+
+	}
+
+
+		</script>
+
+	</body>
+</html>
+
