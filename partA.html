@@ -21,41 +21,89 @@ textured and react to lighting.
 
 <div id="container"></div>
 
-    <script src="js/three.js"></script>
-    <script id="vertexShader" type="x-shader/x-vertex">
+<script src="js/three.js"></script>
+<script id="vertexTextureShader" type="x-shader/x-vertex">
+  precision mediump float;
 
-      precision mediump float;
-      precision mediump int;
+  //Three.js gives us these automatically when a perspective camera is bound to the renderer
+  uniform mat4 modelMatrix;
+  uniform mat4 viewMatrix;
+  uniform mat4 projectionMatrix;
 
-      uniform mat4 modelViewMatrix;
-            uniform mat4 projectionMatrix;
+  
+  //Since we are using BufferGeometry, we have defined the attributes that we need manually
+  attribute vec3 position;
+  attribute vec2 texCoords;
 
-      attribute vec3 position;
-      
-      uniform vec4 my_color;
-      uniform float time;
+  //link variables between the vertex shader and the fragment shader
+  varying vec2 UV;
 
-      varying vec3 vPosition;
-      varying vec4 vColor;
+  void main() {
+    //get the vertex position in CAMERA coordinates
+    vec4 position = viewMatrix * modelMatrix * vec4(position, 1.0);
 
-      void main() 
-      {
+    //pass our interpolated texCoords to the fragment shader
+    UV = texCoords;
 
-        vec3 pos = position;
+    //of course, we always have to output our vertices in clip coords by multiplying through a projection matrix.
+    gl_Position = projectionMatrix * position; 
+    
+  }
+</script>
+<script id="fragmentTextureShader" type="x-shader/x-fragment">
 
-              //uncomment for basic vertex displacement
-              // pos.x += sin(pos.x * 10.0 + time) * 0.1;
-              // pos.y += cos(pos.y * 10.0 + time) * 0.2;
-              // pos.z += sin(pos.z * 20.0 + time) * 0.3;
+  precision mediump float;
 
-        vPosition = pos;
-        vColor = my_color;
+  //special data type used to access texture stored on GPU
+  uniform sampler2D t1, t2;
+  
+  //changing value - we are using this to mix between the two textures
+  uniform float mixVal;
 
-        gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );
-      }
-      
+  //this has to have the same name as in the vertex shader. Here, in the fragment shader, we interpolate across the textureCoordinates
+  varying vec2 UV;
 
-		</script>
+  void main() {
+
+    vec4 c1 = texture2D(t1, UV);
+    vec4 c2 = texture2D(t2, UV);
+
+    gl_FragColor = vec4(mix(c1, c2, mixVal));
+    //gl_FragColor = vec4(1.0,0.0,0.0,1.0);
+  }
+</script>
+<script id="vertexShader" type="x-shader/x-vertex">
+
+  precision mediump float;
+  precision mediump int;
+
+  uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+
+  attribute vec3 position;
+  
+  uniform vec4 my_color;
+  uniform float time;
+
+  varying vec3 vPosition;
+  varying vec4 vColor;
+
+  void main() 
+  {
+
+    vec3 pos = position;
+
+          //uncomment for basic vertex displacement
+          // pos.x += sin(pos.x * 10.0 + time) * 0.1;
+          // pos.y += cos(pos.y * 10.0 + time) * 0.2;
+          // pos.z += sin(pos.z * 20.0 + time) * 0.3;
+
+    vPosition = pos;
+    vColor = my_color;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4( pos, 1.0 );
+  }
+</script>
 
 		<script id="fragmentShader" type="x-shader/x-fragment">
 
@@ -79,13 +127,14 @@ textured and react to lighting.
 
 
 	<script>
-				
   var container;
 
 	var camera, scene, renderer;
 
   var vs = document.getElementById( 'vertexShader' ).textContent;
   var fs = document.getElementById( 'fragmentShader' ).textContent;
+  var vts = document.getElementById( 'vertexTextureShader' ).textContent;
+  var fts = document.getElementById( 'fragmentTextureShader' ).textContent;
 
   var mesh_floor;
 	var mesh_cube;
@@ -103,6 +152,7 @@ textured and react to lighting.
 
 		scene = new THREE.Scene();
 
+    var texture_floor = new THREE.TextureLoader().load( 'texture_floor.jpg' );
 
   	// lights
   	var ambient = new THREE.Vector3(0.1,0.1,0.1);
@@ -112,10 +162,19 @@ textured and react to lighting.
   	var light1_specular = new THREE.Vector3(1.0,1.0,1.0);
 
     //geometry
-    var geometry_box = new THREE.BoxGeometry( 1, 1, 1 );
-    var geometry_floor = new THREE.PlaneGeometry(40, 20);
+    var geometry_box = new THREE.BoxGeometry( 2, 2, 2 );
+    var geometry_floor = new THREE.PlaneBufferGeometry(40, 20);
 
 		// materials (ie, linking to the shader program)
+
+    var texCoords = new Float32Array( [
+      0.0, 0.0,
+      1.0, 1.0,
+      0.0, 1.0,
+      1.0, 0.0
+    ] );
+
+    geometry_floor.addAttribute( 'texCoords', new THREE.BufferAttribute( texCoords, 2 ) );
 
     var uniforms =  {
   		ambient: { type: "v3", value: ambient },
@@ -127,17 +186,28 @@ textured and react to lighting.
   		// light2_specular:  { type: "v3", value: light2_specular },
 		};
 
+    var uniforms_texture = {
+      t1: { type: "t", value: texture_floor },
+      
+    }
+
     material = new THREE.RawShaderMaterial( {
   		uniforms: uniforms,
   		vertexShader: vs,
   		fragmentShader: fs,	
 		} );
+
+    material_texture = new THREE.RawShaderMaterial({
+      uniforms: uniforms_texture,
+      vertexShader: vts,
+      fragmentShader: fts,
+    })
         
 	  mesh_cube = new THREE.Mesh( geometry_box, material );
 		mesh_cube.translateY(2.5);
     scene.add( mesh_cube );
 
-    mesh_floor = new THREE.Mesh( geometry_floor, material);
+    mesh_floor = new THREE.Mesh( geometry_floor, material_texture);
     mesh_floor.rotation.x = 5.2;
     scene.add(mesh_floor);
 
@@ -168,7 +238,7 @@ textured and react to lighting.
 		mesh_cube.rotation.x = time * 0.0005;
 		mesh_cube.rotation.y = time * 0.0005;
 
-		// mesh3.rotation.x = time * 0.0009;
+		//mesh_floor.rotation.x = time * 0.0009;
 
   //   mesh1.position.z = Math.sin(time*0.01);
   //   mesh2.position.z = Math.sin((time+100)*0.01);
