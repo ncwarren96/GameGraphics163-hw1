@@ -33,6 +33,11 @@ textured and react to lighting.
   attribute vec3 position;
   attribute vec3 normal;
 
+  attribute vec2 texCoords;
+
+  //link variables between the vertex shader and the fragment shader
+  varying vec2 UV;
+
   //We are explicitly passing these in
   uniform vec3 light1_pos;
   uniform vec3 light2_pos;
@@ -43,6 +48,9 @@ textured and react to lighting.
 
     //get the vertex position in CAMERA coordinates
     vec4 position = viewMatrix * modelMatrix * vec4(position, 1.0);
+
+    //pass our interpolated texCoords to the fragment shader
+    UV = texCoords;
 
     //use xyz vals to calculate vectors between vertex, light, and camera
     vec3 P = position.xyz;
@@ -76,6 +84,8 @@ textured and react to lighting.
     varying vec3 V, N, L1, L2;
     float spec_intensity = 32.0; //higher value indicates more rapid falloff
 
+    uniform sampler2D t1;
+
     uniform vec3 ambient; //general ambient light in the scene applied to all objects
 
     uniform vec3 light1_diffuse;
@@ -83,6 +93,9 @@ textured and react to lighting.
 
     uniform vec3 light1_specular;
     uniform vec3 light2_specular;
+
+    //this has to have the same name as in the vertex shader. Here, in the fragment shader, we interpolate across the textureCoordinates
+    varying vec2 UV;
 
 
     void main() {
@@ -122,7 +135,9 @@ textured and react to lighting.
           outColor2 = clamp(vec4(color2,1.0), 0.0,1.0);
       }
 
-      gl_FragColor = clamp(vec4(ambient, 1.0) + outColor1 + outColor2, 0.0, 1.0); //add the two lights together, make sure final value is between 0.0 and 1.0
+      vec4 c = texture2D(t1, UV);
+
+      gl_FragColor = clamp(vec4(ambient, 1.0) + outColor1 + outColor2, 0.0, 1.0) * c; //add the two lights together, make sure final value is between 0.0 and 1.0
     }
 
   </script>
@@ -271,7 +286,7 @@ textured and react to lighting.
     var light2_specular = new THREE.Vector3(1.0,1.0,1.0);
 
     //geometry
-    var geometry_box = new THREE.BoxGeometry(2, 2, 2);
+    var geometry_box = new THREE.BoxBufferGeometry(2, 2, 2);
     var geometry_floor = new THREE.PlaneBufferGeometry(40, 20);
     var geometry_sphere = new THREE.SphereGeometry(1, 64, 64);
 
@@ -285,6 +300,7 @@ textured and react to lighting.
     ] );
 
     geometry_floor.addAttribute( 'texCoords', new THREE.BufferAttribute( texCoords, 2 ) );
+    //geometry_box.addAttribute( 'texCoords', new THREE.BufferAttribute(texCoords, 2));
 
 
     // Uniforms
@@ -296,6 +312,7 @@ textured and react to lighting.
      light2_pos: { type: "v3", value: light2_pos },
      light2_diffuse: { type: "v3", value: light2_diffuse },
      light2_specular:  { type: "v3", value: light2_specular },
+     t1: { type: "t", value: texture_floor },
     };
 
     var uniforms_coloring = {
