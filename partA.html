@@ -241,8 +241,9 @@ textured and react to lighting.
 	{
 		vec4 color;
 		color = vec4( vColor );
-		color.r += sin( vPosition.x * 1.0 + time ) * 1.2;
-		color.b += cos( vPosition.x * 5.0 + time  ) * 1.0;
+		color.r += sin( vPosition.x * 5.0 + time ) * 1.0;
+    color.g += sin( (vPosition.x+100.0) * 5.0 + time) * 1.0;
+    color.b += sin( (vPosition.x+200.0) * 5.0 + time) * 1.5;
 		gl_FragColor = color;
 	}
 
@@ -267,6 +268,7 @@ textured and react to lighting.
 	var mesh_floor;
 	var mesh_cube;
 	var material;
+
 
 	init();
 	animate();
@@ -363,18 +365,6 @@ textured and react to lighting.
 	mesh_sphere.translateY(0);
 	mesh_sphere.translateZ(4);
 	scene.add(mesh_sphere);
-
-	var loader = new THREE.OBJLoader();
-		loader.load(
-			// resource URL
-			'knuckles.obj',
-			// called when resource is loaded
-			function ( object ) {
-
-				scene.add( object );
-
-			}
-			);
 	
 		renderer = new THREE.WebGLRenderer();
 		renderer.setClearColor( 0x999999 );
@@ -400,7 +390,7 @@ textured and react to lighting.
 
 		mesh_cube.rotation.x = time * 0.0005;
 		mesh_cube.rotation.y = time * 0.0005;
-	
+
 		mesh_sphere.material.uniforms.time.value = time * 0.005;
 		mesh_sphere.position.x += 0.03;
 		mesh_sphere.rotation.z -= 0.03;
