@@ -66,16 +66,17 @@ way.
 	//this has to have the same name as in the vertex shader. Here, in the fragment shader, we interpolate across the textureCoordinates
 	varying vec2 UV;
 
-		void main() {
+	void main() {
 
 		//see https://en.wikipedia.org/wiki/Sobel_operator
 		
 		vec2 texel = vec2( 1.0 / rx, 1.0 / ry );
 
-		const mat3 Gx = mat3( -1, -2, -1, 0, 0, 0, 1, 2, 1 ); // x direction kernel
-		const mat3 Gy = mat3( -1, 0, 1, -2, 0, 2, -1, 0, 1 ); // y direction kernel
+		const mat3 Gx = mat3( -3, -10, -3, 0, 0, 0, 3, 10, 3 ); // x direction kernel
+		const mat3 Gy = mat3( -3, 0, 3, -10, 0, 10, -3, 0, 3 ); // y direction kernel
 
-		
+		const mat3 Gsh = mat3(1,2,1, 2,4,2, 1,2,1)/16.0;
+
 		// fetch the 3x3 neighborhood of a fragment
 		float tx0y0 = texture2D( t1, UV + texel * vec2( -1, -1 ) ).r;
 		float tx0y1 = texture2D( t1, UV + texel * vec2( -1,  0 ) ).r;
@@ -97,14 +98,27 @@ way.
 				Gy[0][1] * tx0y1 + Gy[1][1] * tx1y1 + Gy[2][1] * tx2y1 + 
 				Gy[0][2] * tx0y2 + Gy[1][2] * tx1y2 + Gy[2][2] * tx2y2;
 
-		float G = sqrt( ( valueGx * valueGx ) + ( valueGy * valueGy ) );
+		float sharpenG =  Gsh[0][0] * tx0y0 + Gsh[1][0] * tx1y0 + Gsh[2][0] * tx2y0 + 
+				Gsh[0][1] * tx0y1 + Gsh[1][1] * tx1y1 + Gsh[2][1] * tx2y1 + 
+				Gsh[0][2] * tx0y2 + Gsh[1][2] * tx1y2 + Gsh[2][2] * tx2y2;
 		
-		vec4 edgePix = vec4(vec3(1.0) - vec3( G ), 1.0);
-		//vec4 edgePix = vec4( vec3( G ), 1.0);
-		vec4 texPix = texture2D(t1, UV);
+		float G = sharpenG;
+				//sqrt( ( valueGx * valueGx ) + ( valueGy * valueGy ) );
 
-		//gl_FragColor = vec4( vec3(1.0) - vec3( G ), 1 );
-		gl_FragColor = mix(texPix, edgePix, mixVal); 
+
+
+		vec4 texMapColor = texture2D(t1, UV);
+		float grey = dot(texMapColor.rgb, vec3(0.299, 0.587, 0.114));
+		
+		vec4 edgePix =
+			//vec4(1.0-texMapColor.rgb, 1.0);		//negative
+			//vec4(grey, grey, grey, 1.0); 		//greyscale
+			//vec4(vec3(1.0) - vec3( G ), 1.0); //edge detecetion negative
+			vec4( vec3( G ), 1.0); 			//edge detection
+		
+		vec4 texPix = texture2D(t1, UV); //original image
+
+		gl_FragColor = mix(texPix, edgePix, mixVal);  //mix between based on mixVal
 
 	}
 
@@ -117,8 +131,8 @@ way.
 
 	var camera, scene, renderer;
 
-		var vs = document.getElementById( 'vertexShader' ).textContent;
-		var fs = document.getElementById( 'fragmentShader' ).textContent;
+	var vs = document.getElementById( 'vertexShader' ).textContent;
+	var fs = document.getElementById( 'fragmentShader' ).textContent;
 
 	var mesh;
 	var material;
@@ -170,6 +184,7 @@ way.
 
 
 
+
 		// itemSize = 3 because there are 3 values (components) per vertex
 		geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
 		geometry.addAttribute( 'texCoords', new THREE.BufferAttribute( texCoords, 2 ) );
@@ -177,7 +192,7 @@ way.
 
 		// materials (ie, linking to the shader program)
 		var uniforms = {
-				t1: { type: "t", value: texture1  },
+			t1: { type: "t", value: texture1  },
 			rx: {type: "f", value: 1024/2},
 			ry: {type: "f", value: 1024/2},
 			mixVal: {type: "f", value: 0.5},
@@ -191,10 +206,10 @@ way.
 		} );
 
 
-			mesh = new THREE.Mesh( geometry, material );
+		mesh = new THREE.Mesh( geometry, material );
 		mesh.translateX(0.0);
 		mesh.material.side = THREE.DoubleSide; //to render both sides of triangle
-			scene.add( mesh );
+		scene.add( mesh );
 
 
 		renderer = new THREE.WebGLRenderer();
@@ -204,7 +219,7 @@ way.
 
 
 		//make it so that resizing the browser window also resizes the scene
-			window.addEventListener( 'resize', onWindowResize, false );
+		window.addEventListener( 'resize', onWindowResize, false );
 		document.addEventListener('mousemove', onDocumentMouseMove, false);
 		
 	}

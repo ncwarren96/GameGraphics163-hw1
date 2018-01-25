@@ -77,6 +77,7 @@ http://jsfiddle.net/awilliams47/LJnue/, http://xpl.github.io/expression/.
 			arr[6] = texture2D( bufferTexture, vec2( left , cy ));   //W
 			arr[7] = texture2D( bufferTexture, vec2( left , up ));   //NW
 
+			//Counts the amount of neighbors alive
 			int cnt = 0;
 			for(int i=0;i<8;i++){
 				if (arr[i].r > 0.5) {
@@ -105,7 +106,6 @@ http://jsfiddle.net/awilliams47/LJnue/, http://xpl.github.io/expression/.
 
 				}
 			}
-
 		 }
 	</script>
 
@@ -119,8 +119,8 @@ var camera;
 var renderer;
 
 
-var resX = 300;
-var resY = 300;
+var resX =300;
+var resY =300;
 
 
 var bufferScene;
