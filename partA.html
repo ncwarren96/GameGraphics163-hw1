@@ -365,6 +365,23 @@ textured and react to lighting.
 	mesh_sphere.translateY(0);
 	mesh_sphere.translateZ(4);
 	scene.add(mesh_sphere);
+
+	loader.load( 'knuckles.obj', function ( object ) {
+		
+		object.traverse( function ( child ) {
+			if ( child instanceof THREE.Mesh ) {
+				child.material = material2;
+			}
+		} );
+		
+		var s = 0.2;
+		object.scale.set( s, s, s );
+		object.position.x += 1.0;
+		object.position.y -= 0.5;
+
+		jaguar = object;
+		scene.add( jaguar );
+	} );
 	
 		renderer = new THREE.WebGLRenderer();
 		renderer.setClearColor( 0x999999 );
