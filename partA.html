@@ -267,6 +267,7 @@ textured and react to lighting.
 
 	var mesh_floor;
 	var mesh_cube;
+	var knuckles;
 	var material;
 
 
@@ -355,7 +356,7 @@ textured and react to lighting.
 	// Meshes
 	mesh_cube = new THREE.Mesh( geometry_box, material_phong );
 	mesh_cube.translateY(3);
-	scene.add( mesh_cube );
+	//scene.add( mesh_cube );
 
 	mesh_floor = new THREE.Mesh( geometry_floor, material_phong);
 	mesh_floor.rotation.x = 5.2;
@@ -372,17 +373,17 @@ textured and react to lighting.
 		
 		object.traverse( function ( child ) {
 			if ( child instanceof THREE.Mesh ) {
-				child.material = material2;
+				child.material = material_phong;
 			}
 		} );
 		
-		var s = 0.2;
+		var s = 2;
 		object.scale.set( s, s, s );
-		object.position.x += 1.0;
-		object.position.y -= 0.5;
 
-		jaguar = object;
-		scene.add( jaguar );
+		object.position.y += 0.5;
+
+		knuckles = object;
+		scene.add( knuckles );
 	} );
 	
 		renderer = new THREE.WebGLRenderer();
@@ -407,8 +408,8 @@ textured and react to lighting.
 
 		var time = performance.now();
 
-		mesh_cube.rotation.x = time * 0.0005;
-		mesh_cube.rotation.y = time * 0.0005;
+		//knuckles.rotation.x = time * 0.0005;
+		knuckles.rotation.y = time * 0.0005;
 
 		mesh_sphere.material.uniforms.time.value = time * 0.005;
 		mesh_sphere.position.x += 0.03;
