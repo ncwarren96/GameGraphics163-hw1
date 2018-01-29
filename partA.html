@@ -366,6 +366,8 @@ textured and react to lighting.
 	mesh_sphere.translateZ(4);
 	scene.add(mesh_sphere);
 
+	var loader = new THREE.OBJLoader();
+
 	loader.load( 'knuckles.obj', function ( object ) {
 		
 		object.traverse( function ( child ) {
